@@ -310,7 +310,7 @@ clusterScanner <- function(motifHits, arabSeqCS)
           print("clusterSeq")
           print(clusterSeq)
           
-          
+          #convert cluster to char format
           clusterSequlchar <-
             as.character(unlist(clusterSeq))
           
@@ -419,18 +419,18 @@ complexCoreScanner <-
       
       
       #complex core marking loop
-      for (i in 1:length(clusterCoreHits))
+      for (i in 1:length(clusterCoreHits)) #while still in list of core hits in the cluster
       {
         print("i")
         print(i)
         
         #if loop is not over
-        if (length(clusterCoreHits) >= (i + 1))
+        if (length(clusterCoreHits) >= (i + 1)) #if the size of the core hit list is at least one larger than the current position
         {
-          if (abs(clusterCoreHits[i] - clusterCoreHits[i + 1]) <= 4)
+          if (abs(clusterCoreHits[i] - clusterCoreHits[i + 1]) <= 4) #if next core hit is 4 positions or less away
           {#initialize or extend complex core if cores are close enough
             if (compCoreFlag==0)
-            { compCoreStart<-clusterCoreHits[i]
+            { compCoreStart<-clusterCoreHits[i] 
             print("comp core start")
             print(clusterCoreHits[i])
             }
@@ -440,7 +440,7 @@ complexCoreScanner <-
             print(clusterCoreHits[i])
           }
           
-          #if core spacing is high and a complex core is already started
+          #if the next core is more than 4 away and a complex core is already started
           else if ((abs(clusterCoreHits[i] - clusterCoreHits[i + 1]) > 4) &&
                    compCoreFlag >= 1)
           {#end the core and upload info 
@@ -521,18 +521,18 @@ coreHits<-clusterInfoMS$coreHits
       
       
       #repeat slowly
-      #look around each core in cluster from left and right margins to see if surrounding cores are in a phasing pattern
+      #walk through core hits of cluster testing phasing pattern
       for (i in 1:length(coreHits))
         
       {
         j = 1
-        #while distance is less than 50, test phasing among front cores
+        #while next core is within core list and distance is less than 50, measure phasing from core i to all other cores in list
         while ((i+j <= length(coreHits)) && abs(coreHits[i] - coreHits[i + j]) < 50)
         {
           frontPhase <- abs(coreHits[i] - coreHits[i + j])
           
-          
-          if (frontPhase >= 9 &&
+          #within these distances gets 1 point in phasing score
+          if (frontPhase >= 9 &&       
               frontPhase <= 11 ||
               frontPhase >= 20 &&
               frontPhase <= 22 ||
@@ -540,7 +540,7 @@ coreHits<-clusterInfoMS$coreHits
               frontPhase <= 33 || frontPhase >= 41 && frontPhase <= 44)
           {phaseScore = phaseScore + 1}
           
-          
+          #within these distances gets 0.5 point in phasing score
           else if (frontPhase == 8 ||
                    frontPhase == 12 ||
                    frontPhase == 19 ||
@@ -574,6 +574,7 @@ coreHits<-clusterInfoMS$coreHits
       print("motifComplexCoreScores")
       print(motifComplexCoreScore)
       
+      #unlist complex core score to a value to prepare it for storage
       motifComplexCoreScoreSum<-sum(unlist(motifComplexCoreScore))
       
       print("motifComplexCoreScoreSum")
@@ -581,6 +582,7 @@ coreHits<-clusterInfoMS$coreHits
       
       clusterSeqULchar<-as.character(unlist(clusterInfoMS$clusterSeq))
       
+      #dividing phasing score by bases in cluster and round to 5 decimel places for phasing score per base
       phasePerBase<-motifPhaseScoreSum/nchar(clusterSeqULchar)
       phasePerBase<-round(phasePerBase,5)
       
@@ -629,7 +631,7 @@ motifWriter<-function(clusterInfoMW, chromMW, targetMW, arabSeqMW, fileStreamMW,
   
   #write info to file
   write.table(motifClusterdf,append=TRUE, col.names=FALSE, row.names=FALSE, quote=FALSE, sep=' ', fileStreamMW)
-  print("babe")
+  print("check")
   
   #write info to bed file 
   write.table(data.frame(chromMW,clusterInfoMW$clusterStart,clusterInfoMW$clusterEnd),append=TRUE, col.names= FALSE, row.names=FALSE, quote=FALSE, sep="\t",fileStreamBAMMW)
@@ -736,16 +738,16 @@ arabMotifSearch <- function(targetfile, resultsOutput="coreMotifOutput", results
 
       print("check13")
 
-      #scan for complex cores
+      #scan clusters one by one for complex cores
       clusterInfo<-complexCoreScanner(clusterStartCCS=clusterList$clusterStartList[i], clusterEndCCS=clusterList$clusterEndList[i], 
                                       clusterSeqCCS=clusterList$clusterSeq[i])
         
       print("check14")
       
-      #score 
+      #score cluster for complex core score and phasing score
       clusterAnnotated <-motifScorer(clusterInfoMS=clusterInfo)
       
-      #write
+      #arrange and write file output and bed output
       result<-motifWriter(clusterInfoMW=clusterAnnotated, chromMW=chrom, targetMW=targetEntry[j], arabSeqMW=arabSeq, 
                           fileStreamMW=fileStream, fileStreamBAMMW=fileStreamBAM, targetDataMW=targetMetachar[j])
       
@@ -760,7 +762,7 @@ arabMotifSearch <- function(targetfile, resultsOutput="coreMotifOutput", results
 #read in results
   resultList = read.table(resultsOutput, header=TRUE)
   
-  #sort results 
+  #sort results and write sorted file 
   attach(resultList)
   resultsList<-resultList[order(phasescore),]
   detach(resultList)
